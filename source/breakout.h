@@ -17,6 +17,21 @@ typedef u16 color;//15 bit color
 typedef u32 tile4bpp[8]; //each tile 
 typedef tile4bpp tile_block[512];
 
+#define TRUE            1
+#define FALSE           0
+
+#define NO_COLLISION            0
+#define LEFT_COLLISION          1
+#define RIGHT_COLLISION         2
+#define TOP_COLLISION           3
+#define BOTTOM_COLLISION        4
+
+typedef struct game_obj {
+    int x, y, w, h;
+    int xvel, yvel;
+    int hidden;
+} game_obj;
+
 #define MEM_IO          0x04000000 //IO registers are here
 #define MEM_PAL         0x05000000 //Color palette memory
 #define MEM_VRAM        0x06000000 //screen VRAM starts here
@@ -106,5 +121,10 @@ static inline color rgb15(u32 red, u32 green, u32 blue)
 {
     return red | (green<<5) | (blue<<10);
 }
+
+static inline void flip(int *val) { *val = -(*val); }
+
+
+
 
 #endif //breakout_h

@@ -86,6 +86,7 @@ u16 __key_curr, __key_prev;
 #define KEY_START       0x0008
 #define KEY_MASK        0x03FF
 
+
 static inline void key_poll()
 {
     __key_prev = __key_curr;

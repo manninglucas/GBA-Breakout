@@ -40,36 +40,81 @@ game_obj create_game_obj(int x, int y, int w, int h,
 }
 
 
-void resolve_ball_collision(game_obj *ball, game_obj *obj)
+void resolve_paddle_collision(game_obj *ball, game_obj *paddle)
 {
-    switch(will_intersect(ball->x, ball->xvel, ball->y, ball->yvel, ball->w, ball->h, 
-                obj->x, obj->xvel, obj->y, obj->yvel, obj->w, obj->h)){
+    switch(will_intersect(ball->x, ball->xvel, ball->y, ball->yvel, 
+                ball->w, ball->h, paddle->x, paddle->xvel, paddle->y,
+                paddle->yvel, paddle->w, paddle->h)){
         
         case NO_COLLISION:
             break;
         
         case TOP_COLLISION:
-            ball->y = obj->y - ball->h;
+            ball->y = paddle->y - ball->h;
             flip(&(ball->yvel));
             break;
 
         case BOTTOM_COLLISION:
-            ball->y = obj->y + obj->h;
+            ball->y = paddle->y + paddle->h;
             flip(&(ball->yvel));
             break;
 
         case LEFT_COLLISION:
-            ball->x = obj->x - ball->w + obj->xvel;
+            ball->x = paddle->x - ball->w + paddle->xvel;
             //should always reflect velocity a certain way
             ball->xvel = ball->xvel > 0 ? -ball->xvel : ball->xvel;
             break;
 
         case RIGHT_COLLISION:
-            ball->x = obj->x + obj->w + obj->xvel;
+            ball->x = paddle->x + paddle->w + paddle->xvel;
             //same as the other
             ball->xvel = ball->xvel < 0 ? -ball->xvel : ball->xvel;
             break;
     }
+}
+
+void resolve_brick_collision(game_obj *ball)
+{
+    for (int i = 2; i < 5*15+2; ++i)
+    {
+        volatile obj_attr *brick_attr = &oam_mem[i];
+        
+        int brick_y = brick_attr->attr0 & ATTR0_Y_MASK;
+        int brick_x = brick_attr->attr1 & ATTR1_X_MASK;
+
+        switch(will_intersect(ball->x, ball->xvel, ball->y, ball->yvel,
+                    ball->w, ball->h, brick_x, 0, brick_y, 0, 16, 8)) {
+
+            case NO_COLLISION:
+               break;
+            
+            case TOP_COLLISION:
+                ball->y = brick_y - ball->h;
+                flip(&(ball->yvel));
+                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
+                break;
+
+            case BOTTOM_COLLISION:
+                ball->y = brick_y + 8;
+                flip(&(ball->yvel));
+                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
+                break;
+
+            case LEFT_COLLISION:
+                ball->x = brick_x - ball->w;
+                //should always reflect velocity a certain way
+                ball->xvel = ball->xvel > 0 ? -ball->xvel : ball->xvel;
+                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
+                break;
+
+            case RIGHT_COLLISION:
+                ball->x = brick_x + 16;
+                //same as the other
+                ball->xvel = ball->xvel < 0 ? -ball->xvel : ball->xvel;
+                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
+                break;
+       }
+    } 
 }
 
 int main()
@@ -165,7 +210,7 @@ int main()
         key_poll();
 
         if (key_is_down(KEY_LEFT)) {
-            paddle.xvel = paddle.x - paddle.xvel < 0 ?  0 : -paddle_vel;
+            paddle.xvel = paddle.x + paddle.xvel < 0 ?  0 : -paddle_vel;
 
         } else if (key_is_down(KEY_RIGHT)) {
             paddle.xvel = paddle.x + paddle.w + paddle.xvel > SCREEN_WIDTH ? 
@@ -198,7 +243,8 @@ int main()
             flip(&(ball.yvel));
         }
 
-        resolve_ball_collision(&ball, &paddle); 
+        resolve_paddle_collision(&ball, &paddle); 
+        resolve_brick_collision(&ball); 
 
         obj_set_pos(paddle_attr, paddle.x, paddle.y);
         obj_set_pos(ball_attr, ball.x, ball.y);

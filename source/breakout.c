@@ -88,17 +88,30 @@ void resolve_brick_collision(game_obj *ball, int *hits)
         //with the hidden attribute.
         obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
 
+        (*hits)++;
+
+        if (*hits % 8 == 0 && *hits < 17) {
+            ball->xvel > 0 ? ball->xvel++ : ball->xvel--;
+            ball->yvel > 0 ? ball->yvel++ : ball->yvel--;
+        }
+
         switch(will_intersect(ball->x, ball->xvel, ball->y, ball->yvel,
                     ball->w, ball->h, brick_x, 0, brick_y, 
                     0, BRICK_WIDTH, BRICK_HEIGHT)) {
 
             case NO_COLLISION:
                 obj_set_pos(brick_attr, brick_x, brick_y);
+                if (*hits % 8 == 0 && *hits < 17) {
+                    ball->xvel > 0 ? ball->xvel-- : ball->xvel++;
+                    ball->yvel > 0 ? ball->yvel-- : ball->yvel++;
+                }
+                (*hits)--;
                 break;
             
             case TOP_COLLISION:
                 ball->y = brick_y - ball->h;
                 FLIP(ball->yvel);
+                
                 break;
 
             case BOTTOM_COLLISION:
@@ -132,11 +145,15 @@ void resolve_wall_collision(game_obj *ball)
     if (ball->y + ball->yvel < 0) {
         ball->y = 0;
         FLIP(ball->yvel);
-    } else if (ball->y + ball->yvel > SCREEN_HEIGHT) {
-        //eventually replace this with death code
-        ball->y = SCREEN_HEIGHT;
-        FLIP(ball->yvel);
     }
+}
+
+void ball_reset(game_obj *ball)
+{
+    ball->x = SCREEN_WIDTH / 2;
+    ball->y = SCREEN_HEIGHT / 2;
+    ball->xvel = 1;
+    ball->yvel = 1;
 }
 
 int main()
@@ -164,7 +181,7 @@ int main()
         //palette memory.
         for (int k = 0; k < BRICK_TILES*(sizeof(tile4bpp) / sizeof(u16)); ++k) {
             brick_tile_mem[k] = ((i + 1) << 12) | ((i + 1) << 8) 
-                    | ((i + 1) << 4) | i + 1;
+                    | ((i + 1) << 4) | (i + 1);
         }
 
        
@@ -264,7 +281,29 @@ int main()
 
         resolve_wall_collision(&ball);
         resolve_paddle_collision(&ball, &paddle); 
-        resolve_brick_collision(&ball, &hits); 
+        resolve_brick_collision(&ball, &hits);
+
+        if (ball.y + ball.yvel > SCREEN_HEIGHT) {
+            hits = 0;
+            lives--;
+            ball_reset(&ball);
+            
+            if (lives == 0) {
+                lives = 5;
+
+                for (int i = 0; i < BRICK_ROWS; ++i) {
+                    for (int j = 0; j < BRICK_COLUMNS; ++j) {
+                        volatile obj_attr *brick_attr = 
+                            &oam_mem[i*BRICK_COLUMNS + j];
+
+                        obj_set_pos(brick_attr, j*BRICK_WIDTH, 
+                            BRICK_HEIGHT*3 + i*BRICK_HEIGHT);
+
+                    }
+                }
+            }
+       }
+
 
         obj_set_pos(paddle_attr, paddle.x, paddle.y);
         obj_set_pos(ball_attr, ball.x, ball.y);

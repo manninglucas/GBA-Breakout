@@ -75,7 +75,7 @@ void resolve_paddle_collision(game_obj *ball, game_obj *paddle)
 }
 
 //Checks for collisions with bricks, resolves them and removes the brick.
-void resolve_brick_collision(game_obj *ball)
+void resolve_brick_collision(game_obj *ball, int *hits)
 {
     for (int i = 0; i < BRICK_ROWS*BRICK_COLUMNS; ++i)
     {
@@ -83,42 +83,37 @@ void resolve_brick_collision(game_obj *ball)
         
         int brick_y = brick_attr->attr0 & ATTR0_Y_MASK;
         int brick_x = brick_attr->attr1 & ATTR1_X_MASK;
+ 
+        //to remove bricks I just put them off screen instead of messing
+        //with the hidden attribute.
+        obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
 
         switch(will_intersect(ball->x, ball->xvel, ball->y, ball->yvel,
                     ball->w, ball->h, brick_x, 0, brick_y, 
                     0, BRICK_WIDTH, BRICK_HEIGHT)) {
 
             case NO_COLLISION:
-               break;
+                obj_set_pos(brick_attr, brick_x, brick_y);
+                break;
             
             case TOP_COLLISION:
                 ball->y = brick_y - ball->h;
                 FLIP(ball->yvel);
-                
-                //to remove bricks I just put them off screen instead of messing
-                //with the hidden attribute.
-                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
                 break;
 
             case BOTTOM_COLLISION:
                 ball->y = brick_y + BRICK_HEIGHT;
                 FLIP(ball->yvel);
-
-                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
                 break;
 
             case LEFT_COLLISION:
                 ball->x = brick_x - ball->w;
                 ball->xvel = -ABS(ball->xvel);
-
-                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
                 break;
 
             case RIGHT_COLLISION:
                 ball->x = brick_x + BRICK_WIDTH;
                 ball->xvel = ABS(ball->xvel);
-
-                obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
                 break;
        }
     } 
@@ -167,7 +162,7 @@ int main()
         //formatted for 4bpp. These operators for index 1 will create 0x1111
         //The indicies correspond to the indicies of the colors in the 
         //palette memory.
-        for (int k = 0; k < BRICK_TILES * (sizeof(tile4bpp) / 2); ++k) {
+        for (int k = 0; k < BRICK_TILES*(sizeof(tile4bpp) / sizeof(u16)); ++k) {
             brick_tile_mem[k] = ((i + 1) << 12) | ((i + 1) << 8) 
                     | ((i + 1) << 4) | i + 1;
         }
@@ -205,7 +200,7 @@ int main()
     //the suze by 2 to get the correct amount of iterations. There are 4 tiles
     //to loop through (32x8p) so the whole thing is multiplied by 4
     //0x2222 converts to: 0b0010001000100010
-    for (int i = 0; i < 4 * (sizeof(tile4bpp) / 2); ++i) {
+    for (int i = 0; i < 4 * (sizeof(tile4bpp) / sizeof(u16)); ++i) {
         game_obj_tile_mem[i] = 0x6666; //bad luck...?
     }
    
@@ -217,28 +212,30 @@ int main()
     //this bitfield sets the id of the object and the palette bank.
     //The pallete bank we use is at index zero so no need to set it.
     //this sets the base tile for pallete to build the sprite from
-    paddle_attr->attr2 = BRICK_ROWS*2 + 1;
+    paddle_attr->attr2 = BRICK_ROWS*BRICK_TILES + 1;
 
     volatile obj_attr *ball_attr = &oam_mem[BRICK_ROWS*BRICK_COLUMNS+1];
 
     ball_attr->attr0 = ATTR0_SHAPE_SQUARE;
     ball_attr->attr1 = ATTR1_SIZE_SMALL; 
-    ball_attr->attr2 = BRICK_ROWS*2 + 1;
+    ball_attr->attr2 = BRICK_ROWS*BRICK_TILES + 1;
 
     //This sets it in object and 1d mode for tiles
     REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D;
 
     const int paddle_vel = 3;
 
-    game_obj paddle = create_game_obj(20, SCREEN_HEIGHT - 8, 32, 8, 0, 0);
+    game_obj paddle = create_game_obj(20, SCREEN_HEIGHT - PADDLE_HEIGHT, 
+            PADDLE_WIDTH, PADDLE_HEIGHT, 0, 0);
     game_obj ball = create_game_obj(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
-            8, 8, 1, 1);
+            BALL_WIDTH, BALL_HEIGHT, 1, 1);
 
     obj_set_pos(paddle_attr, paddle.x, paddle.y);
     obj_set_pos(ball_attr, ball.x, ball.y);
 
     int paused = FALSE;
     int lives = 5;
+    int hits = 0;
 
     while (1)
     {
@@ -261,14 +258,13 @@ int main()
         } else {
             paddle.xvel = 0;
         }
-        
 
         ball.x += ball.xvel;
         ball.y += ball.yvel;
 
         resolve_wall_collision(&ball);
         resolve_paddle_collision(&ball, &paddle); 
-        resolve_brick_collision(&ball); 
+        resolve_brick_collision(&ball, &hits); 
 
         obj_set_pos(paddle_attr, paddle.x, paddle.y);
         obj_set_pos(ball_attr, ball.x, ball.y);

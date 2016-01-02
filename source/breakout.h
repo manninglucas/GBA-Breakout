@@ -57,6 +57,8 @@ typedef struct obj_attr
 
 #define PADDLE_WIDTH            32
 #define PADDLE_HEIGHT           8
+#define PADDLE_SIZE             PADDLE_WIDTH * PADDLE_HEIGHT
+#define PADDLE_TILES            PADDLE_SIZE / TILE_SIZE
 
 #define BALL_WIDTH              8
 #define BALL_HEIGHT             8

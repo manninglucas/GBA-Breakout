@@ -36,7 +36,7 @@ typedef struct obj_attr
 #define FALSE                   0
 
 #define FLIP(x) x = -x
-#define ABS(x)  x < 0 ? -x : x
+#define ABS(x)  (x < 0 ? -x : x)
 
 //Game related types and constants
 //tiles on the GBA are 8x8p

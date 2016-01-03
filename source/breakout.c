@@ -88,6 +88,9 @@ void resolve_brick_collision(game_obj *ball, int *hits)
         //with the hidden attribute.
         obj_set_pos(brick_attr, SCREEN_WIDTH, 0);
 
+        //I incremement hits and add speed before and then
+        //decrement it if there's no collision. Easier than writing the same
+        //code in every collision state
         (*hits)++;
 
         if (*hits % 8 == 0 && *hits < 17) {
@@ -101,7 +104,10 @@ void resolve_brick_collision(game_obj *ball, int *hits)
 
             case NO_COLLISION:
                 obj_set_pos(brick_attr, brick_x, brick_y);
+
                 if (*hits % 8 == 0 && *hits < 17) {
+                    //I need to do this to ensure the vel grows in the 
+                    //right direction
                     ball->xvel > 0 ? ball->xvel-- : ball->xvel++;
                     ball->yvel > 0 ? ball->yvel-- : ball->yvel++;
                 }
@@ -154,6 +160,19 @@ void ball_reset(game_obj *ball)
     ball->y = SCREEN_HEIGHT / 2;
     ball->xvel = 1;
     ball->yvel = 1;
+}
+
+void brick_reset()
+{
+    for (int i = 0; i < BRICK_ROWS; ++i) {
+        for (int j = 0; j < BRICK_COLUMNS; ++j) {
+
+            volatile obj_attr *brick_attr = &oam_mem[i*BRICK_COLUMNS + j];
+
+            obj_set_pos(brick_attr, j*BRICK_WIDTH,
+                    BRICK_HEIGHT*3 + i*BRICK_HEIGHT);
+        }       
+    }
 }
 
 int main()
@@ -250,7 +269,6 @@ int main()
     obj_set_pos(paddle_attr, paddle.x, paddle.y);
     obj_set_pos(ball_attr, ball.x, ball.y);
 
-    int paused = FALSE;
     int lives = 5;
     int hits = 0;
 
@@ -265,7 +283,8 @@ int main()
         
         key_poll();
         paddle.x += paddle.xvel;
-
+        
+        //key control stuff
         if (key_is_down(KEY_LEFT)) {
             paddle.xvel = paddle.x + paddle.xvel < 0 ?  0 : -paddle_vel;
 
@@ -282,28 +301,19 @@ int main()
         resolve_wall_collision(&ball);
         resolve_paddle_collision(&ball, &paddle); 
         resolve_brick_collision(&ball, &hits);
-
+        
+        //lose a life
         if (ball.y + ball.yvel > SCREEN_HEIGHT) {
             hits = 0;
             lives--;
             ball_reset(&ball);
-            
+           
+           //lose condition. Reset everything 
             if (lives == 0) {
                 lives = 5;
-
-                for (int i = 0; i < BRICK_ROWS; ++i) {
-                    for (int j = 0; j < BRICK_COLUMNS; ++j) {
-                        volatile obj_attr *brick_attr = 
-                            &oam_mem[i*BRICK_COLUMNS + j];
-
-                        obj_set_pos(brick_attr, j*BRICK_WIDTH, 
-                            BRICK_HEIGHT*3 + i*BRICK_HEIGHT);
-
-                    }
-                }
+                brick_reset();
             }
-       }
-
+        }
 
         obj_set_pos(paddle_attr, paddle.x, paddle.y);
         obj_set_pos(ball_attr, ball.x, ball.y);

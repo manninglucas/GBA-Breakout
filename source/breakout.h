@@ -40,13 +40,16 @@ typedef struct obj_attr
 
 //Game related types and constants
 //tiles on the GBA are 8x8p
-#define TILE_SIZE               64
 
-#define NO_COLLISION            0
-#define LEFT_COLLISION          1
-#define RIGHT_COLLISION         2
-#define TOP_COLLISION           3
-#define BOTTOM_COLLISION        4
+typedef enum {
+    NO_COLLISION,
+    LEFT_COLLISION,
+    RIGHT_COLLISION,
+    TOP_COLLISION,
+    BOTTOM_COLLISION
+} collision_type;
+
+#define TILE_SIZE               64
 
 #define BRICK_ROWS              5
 #define BRICK_COLUMNS           15

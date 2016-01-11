@@ -5,15 +5,16 @@
 
 //Checks if 2 rectangles are intersecting in the next frame
 //Returns the side from which the intersection happens
-int will_intersect(int x1, int xv1, int y1, int yv1, int w1, int h1,
+collision_type will_intersect(int x1, int xv1, int y1, int yv1, int w1, int h1,
         int x2, int xv2, int y2, int yv2, int w2, int h2)
 {
     int dx1 = x1 + xv1, dy1 = y1 + yv1;
     int dx2 = x2 + xv2, dy2 = y2 + yv2;
     
-    //First I check if the rectangles are intersecting, then extrapolate with
-    //the given parameters to estimate where the ball was in the previous frame
-    //to determine which side of the paddle collided with the ball.
+    //First I check if the rectangles are intersecting, then
+    //extrapolate with the given parameters to estimate where the 
+    //ball was in the previous frame to determine which 
+    //side of the paddle collided with the ball.
     if ((dx1 + w1 > dx2 && dx1 < dx2 + w2) 
             && (dy1 + h1 > dy2 && dy1 < dy2 + h2)) {
         if (y1 - yv1 + h1 < y2 - yv2) 

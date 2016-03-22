@@ -3,6 +3,8 @@ Breakout on the GameBoy Advance
 
 This is a side project with the goal of implementing [Atari's Breakout](https://en.wikipedia.org/wiki/Breakout_(video_game)) on the Gameboy Advance (to an extent). 
 
+![Gameplay](http://i.imgur.com/Yb8lnjv.gif)
+
 ##How to compile
 The Makefile works on UINX like systems with the devkitARM tools. Specific information and compilation instructions
 can be found on the devkitPro [website](http://devkitpro.org/). That site should have all the tools needed. I've
